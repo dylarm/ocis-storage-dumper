@@ -8,22 +8,22 @@ This script is used to extract files from an OCIS instance, such as a user's per
 - msgpack module (use `pip install msgpack` to install)
 
 ## Usage
-
+```
 python3 dump.py [topdir] [-l/--list] [-u/--user=USERNAME]
 topdir: The directory of ocis storage. Default is $HOME/.ocis.
 -l/--list: List files without copying.
 -u/--user USERNAME: Filter by username.
-
+```
 Examples
 
 To extract all files from the OCIS storage and save to /tmp/ocis-dump-[timestamp]:
-python3 dump.py
+`python3 dump.py`
 
 To list all files in the OCIS storage without copying:
-python3 dump.py -l
+`python3 dump.py -l`
 
 To extract all files from a particular user's spaces:
-python3 dump.py -u=john_doe
+`python3 dump.py -u=john_doe`
 
 Limitations
 
