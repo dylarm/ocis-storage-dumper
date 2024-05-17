@@ -46,7 +46,7 @@ parser.add_argument(
 
 # Add the user argument
 parser.add_argument("-u", "--user", help="Filter by username")
-
+# TODO: add ability to verify/fix symlinks in topdir (personal need, from a bad copy operation)
 # Parse the command-line arguments
 args = parser.parse_args()
 
@@ -79,6 +79,7 @@ def load_mpk_decoded(file):
 
 user_exists = False
 
+# TODO: replace for-loop and "if 'nodes'" with Path.glob()
 # Walk through the directory structure starting from 'top'
 for dirpath, dirnames, filenames in os.walk(os.path.join(top, sprefix)):
     if "nodes" in dirnames:
@@ -89,6 +90,7 @@ for dirpath, dirnames, filenames in os.walk(os.path.join(top, sprefix)):
         # Construct the root path
         root = os.path.join(space_nodes_dir, "nodes", fourslashes(spaceid))
 
+        # TODO: use glob'd name from Path
         mpk_file = f"{root}.mpk"
         mpk_content = load_mpk_decoded(mpk_file)
         if mpk_content is not None:
@@ -118,6 +120,8 @@ for dirpath, dirnames, filenames in os.walk(os.path.join(top, sprefix)):
             files_and_parents = {}
 
             # Go through the nodes
+            # TODO: this could also be improved with Path.glob()
+            # rationale: some mpk files, for unknown reasons, have a datetime between the filename and the mpk suffix
             nodes_dir = os.path.join(dirpath, "nodes")
             for dirpath2, dirnames2, filenames2 in os.walk(nodes_dir):
                 for filename in filenames2:
