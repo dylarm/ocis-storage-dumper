@@ -8,14 +8,16 @@ import msgpack
 import sys
 import argparse
 
+
 # A function to split a string into parts and join with slashes
 def fourslashes(s):
     if s is None:
-        return ''
+        return ""
     s = decode_if_bytes(s)
-    split_id = [s[i:i+2] for i in range(0, 8, 2)]
+    split_id = [s[i : i + 2] for i in range(0, 8, 2)]
     split_id.append(s[8:])
-    return '/'.join(split_id)
+    return "/".join(split_id)
+
 
 def decode_if_bytes(s):
     if isinstance(s, bytes):
@@ -23,18 +25,27 @@ def decode_if_bytes(s):
     else:
         return s
 
+
 # Create the argument parser
-parser = argparse.ArgumentParser(description='Version 2.0\nTopdir is the directory of ocis storage. Default is $HOME/.ocis')
+parser = argparse.ArgumentParser(
+    description="Version 2.0\nTopdir is the directory of ocis storage. Default is $HOME/.ocis"
+)
 
 # Add an argument to the parser - topdir
-parser.add_argument('topdir', nargs='?', default=os.getenv('HOME') + "/.ocis",
-                    help='The directory of ocis storage')
+parser.add_argument(
+    "topdir",
+    nargs="?",
+    default=os.getenv("HOME") + "/.ocis",
+    help="The directory of ocis storage",
+)
 
 # Add the new list argument
-parser.add_argument('-l', '--list', action='store_true', help='List files without copying')
+parser.add_argument(
+    "-l", "--list", action="store_true", help="List files without copying"
+)
 
 # Add the user argument
-parser.add_argument('-u', '--user', help='Filter by username')
+parser.add_argument("-u", "--user", help="Filter by username")
 
 # Parse the command-line arguments
 args = parser.parse_args()
@@ -55,24 +66,26 @@ if not os.path.isdir(storage_dir):
 
 print("top is: ", top)
 
+
 def load_mpk_decoded(file):
     try:
-        with open(file, 'rb') as f:
+        with open(file, "rb") as f:
             mpk_content = msgpack.unpack(f, raw=True)
         return mpk_content
     except ValueError:
         print(f"Unpack failed for file: {file}")
         return None
 
+
 user_exists = False
 
 # Walk through the directory structure starting from 'top'
 for dirpath, dirnames, filenames in os.walk(os.path.join(top, sprefix)):
-    if 'nodes' in dirnames:
+    if "nodes" in dirnames:
         # Get the directory for space nodes
         space_nodes_dir = dirpath
         # Construct the spaceid from the directory path
-        spaceid = dirpath.split('/')[-2] + os.path.basename(dirpath)
+        spaceid = dirpath.split("/")[-2] + os.path.basename(dirpath)
         # Construct the root path
         root = os.path.join(space_nodes_dir, "nodes", fourslashes(spaceid))
 
@@ -81,8 +94,12 @@ for dirpath, dirnames, filenames in os.walk(os.path.join(top, sprefix)):
         if mpk_content is not None:
 
             # Extract space name and type from the msgpack content
-            space_name = mpk_content.get(b'user.ocis.space.name', b'N/A').decode('utf-8')
-            space_type = mpk_content.get(b'user.ocis.space.type', b'N/A').decode('utf-8')
+            space_name = mpk_content.get(b"user.ocis.space.name", b"N/A").decode(
+                "utf-8"
+            )
+            space_type = mpk_content.get(b"user.ocis.space.type", b"N/A").decode(
+                "utf-8"
+            )
 
             if args.user and args.user.lower() not in space_name.lower():
                 continue
@@ -92,7 +109,9 @@ for dirpath, dirnames, filenames in os.walk(os.path.join(top, sprefix)):
             # Print the space info
             print(f"\n[{space_type}/{space_name}]")
             print(f"\troot = {root}")
-            print(f"\ttreesize = {mpk_content.get(b'user.ocis.treesize', b'N/A')} bytes")
+            print(
+                f"\ttreesize = {mpk_content.get(b'user.ocis.treesize', b'N/A')} bytes"
+            )
             print("\tsymlink_tree =")
 
             # Initialize a dictionary to store files and parents
@@ -106,29 +125,38 @@ for dirpath, dirnames, filenames in os.walk(os.path.join(top, sprefix)):
                         # Construct the path to the msgpack file
                         mpk_file2 = os.path.join(dirpath2, filename)
                         mpk_content2 = load_mpk_decoded(mpk_file2)
-                        
+
                         # Extract parentid, blobid, and name from the msgpack content
-                        parentid = mpk_content2.get(b'user.ocis.parentid')
-                        blobid = mpk_content2.get(b'user.ocis.blobid', b'N/A')
-                        name = mpk_content2.get(b'user.ocis.name', b'N/A')
+                        parentid = mpk_content2.get(b"user.ocis.parentid")
+                        blobid = mpk_content2.get(b"user.ocis.blobid", b"N/A")
+                        name = mpk_content2.get(b"user.ocis.name", b"N/A")
 
                         # Check if blobid is available
-                        if blobid != b'N/A':
+                        if blobid != b"N/A":
                             # Check if parent is space
                             if parentid == spaceid:
-                                files_and_parents[name.decode('utf-8')] = (".", blobid)
+                                files_and_parents[name.decode("utf-8")] = (".", blobid)
                             elif parentid is not None and parentid != spaceid:
                                 # Construct the path to the parent
-                                parent_path = os.path.join(space_nodes_dir, "nodes", fourslashes(parentid))
+                                parent_path = os.path.join(
+                                    space_nodes_dir, "nodes", fourslashes(parentid)
+                                )
                                 # Construct the path to the parent's msgpack file
                                 mpk_file3 = f"{parent_path}.mpk"
                                 mpk_content3 = load_mpk_decoded(mpk_file3)
                                 # Extract the parent's name from the msgpack content
-                                parent_name = mpk_content3.get(b'user.ocis.name', b'N/A').decode('utf-8')
-                                files_and_parents[name.decode('utf-8')] = (f"./{parent_name}", blobid)
+                                parent_name = mpk_content3.get(
+                                    b"user.ocis.name", b"N/A"
+                                ).decode("utf-8")
+                                files_and_parents[name.decode("utf-8")] = (
+                                    f"./{parent_name}",
+                                    blobid,
+                                )
 
             # Copy the files to the output directory
-            for i, (name, (parent_path, blobid)) in enumerate(files_and_parents.items(), start=1):
+            for i, (name, (parent_path, blobid)) in enumerate(
+                files_and_parents.items(), start=1
+            ):
                 # Construct the path to the blob
                 blob_path = os.path.join(space_nodes_dir, "blobs", fourslashes(blobid))
                 if os.path.exists(blob_path):
@@ -136,7 +164,9 @@ for dirpath, dirnames, filenames in os.walk(os.path.join(top, sprefix)):
                     if space_type == "personal" and "_" in space_name:
                         space_name = space_name.split("_")[1]
                     # Construct the path to the temporary file
-                    tmp_path = os.path.join(outtop, space_type, space_name, parent_path, name)
+                    tmp_path = os.path.join(
+                        outtop, space_type, space_name, parent_path, name
+                    )
                     # Print file without copying if 'list' argument is provided
                     if args.list:
                         print(f"\t{i}\t{parent_path}/{name} -> blobid={blobid}")
