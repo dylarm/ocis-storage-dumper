@@ -5,7 +5,7 @@ This script is used to extract files from an OCIS instance, such as a user's per
 ## Requirements
 
 - Python 3
-- msgpack module (use `pip install msgpack` to install)
+- msgpack module (use `pip install msgpack` or `pip install -r requirements.txt` to install)
 
 ## Usage
 ```
