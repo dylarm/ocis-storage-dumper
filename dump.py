@@ -4,6 +4,9 @@
 import os
 import datetime
 import shutil
+from pathlib import Path
+from typing import Iterable
+
 import msgpack
 import sys
 import argparse
@@ -183,6 +186,32 @@ for dirpath, dirnames, filenames in os.walk(os.path.join(top, sprefix)):
                 else:
                     # Print a warning if the blob does not exist
                     print(f"WARNING: Blob file {blob_path} does not exist.")
+
+
+def find_nodes(path: Path = Path(top, sprefix)) -> Iterable[Path]:
+    # Find the "nodes" of the system
+    pass
+
+
+def find_mpks(path: Path) -> Iterable[Path]:
+    # Find all mpk files under the given path
+    pass
+
+
+def mpk_info(path: Path) -> Iterable[str]:
+    # Will return spaceid, root, space_name, space_type, size, parentid, blodid, and name
+    pass
+
+
+def main():
+    # 1. Find the nodes
+    # 2. For each node, find the mpk files under it
+    # 3. Extract pertinent info (mpk_info)
+    # 4. Create file+parent dict
+    # 5. Copy files to outtop (optional)
+    # 6. Fix any symlinks that have been resolved (optional, stretch goal)
+    pass
+
 
 # Print the location of the copied files
 if not args.list:
