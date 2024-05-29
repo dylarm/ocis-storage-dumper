@@ -199,12 +199,12 @@ def find_nodes(path: Path) -> Iterable[Path]:
     return path.glob("*/*/nodes")
 
 
-def find_mpks(path: Path) -> Iterable[Path]:
+def find_all_mpks(path: Path) -> Iterable[Path]:
     # Find all mpk files under the given path
     return path.glob("**/*.mpk")
 
 
-def find_root_mpk(path: Path) -> Path:
+def find_mpk(path: Path) -> Path:
     # Find the mpk for a given root_id
     trivial_mpk = Path(str(path) + ".mpk")
     if trivial_mpk.exists():
@@ -223,18 +223,18 @@ def mpk_info(mpk_file) -> Iterable[str]:
     s_type: str = mpk_file.get(b"user.ocis.space.type", b"N/A").decode("utf-8")
     s_size_bytes = int(mpk_file.get(b"user.ocis.treesize", b"N/A"))
     if s_size_bytes > 1024 and s_size_bytes < 1024 * 1024:
-        s_size = s_size_bytes // 1024
+        s_size = s_size_bytes / 1024
         size_type = "KiB"
     elif s_size_bytes > 1024 * 1024 and s_size_bytes < 1024 * 1024 * 1024:
-        s_size = s_size_bytes // (1024 * 1024)
+        s_size = s_size_bytes / (1024 * 1024)
         size_type = "MiB"
     elif s_size_bytes > 1024 * 1024 * 1024:
-        s_size = s_size_bytes // (1024 * 1024 * 1024)
+        s_size = s_size_bytes / (1024 * 1024 * 1024)
         size_type = "GiB"
     else:
         s_size = s_size_bytes
         size_type = "bytes"
-    return s_name, s_type, str(s_size), size_type
+    return s_name, s_type, str(round(s_size, 2)), size_type
 
 
 def gen_node_info(path: Path) -> Iterable[Path]:
@@ -266,7 +266,7 @@ def main(sprefix: str = SPREFIX, args: argparse.Namespace = ARGS) -> None:
         root_id: Path
         node_dir, space_id, root_id = gen_node_info(node)
         try:
-            root_mpk = find_root_mpk(root_id)
+            root_mpk = find_mpk(root_id)
             root_mpk_contents = _load_mpk_decoded(root_mpk)
         except FileNotFoundError:
             print(f"No mpk for {root_id}")
