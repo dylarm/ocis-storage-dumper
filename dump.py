@@ -202,7 +202,9 @@ def find_mpks(path: Path) -> Iterable[Path]:
 def mpk_info(path: Path) -> Iterable[str]:
     # Will return spaceid, root, space_name, space_type, size, parentid, blodid, and name
     if ".mpk" != path.suffix:
-        return ()
+        raise TypeError(
+            f"Cannot get information from non-mpk file: {path.name} in {path.parent}"
+        )
     return ()
 
 
