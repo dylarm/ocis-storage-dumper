@@ -189,13 +189,14 @@ for dirpath, dirnames, filenames in os.walk(os.path.join(top, sprefix)):
 
 
 def find_nodes(path: Path = Path(top, sprefix)) -> Iterable[Path]:
-    # Find the "nodes" of the system
-    pass
+    # Only two directories down
+    # This is dirpath in the original code
+    return path.glob("*/*/nodes")
 
 
 def find_mpks(path: Path) -> Iterable[Path]:
     # Find all mpk files under the given path
-    pass
+    return path.glob("**/*.mpk")
 
 
 def mpk_info(path: Path) -> Iterable[str]:
