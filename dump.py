@@ -13,7 +13,7 @@ import argparse
 
 
 # A function to split a string into parts and join with slashes
-def fourslashes(s):
+def fourslashes(s: str) -> str:
     if s is None:
         return ""
     s = decode_if_bytes(s)
@@ -199,8 +199,21 @@ def find_mpks(path: Path) -> Iterable[Path]:
     return path.glob("**/*.mpk")
 
 
+def find_root_mpk(path: Path) -> Path:
+    # Find the mpk for a given root_id
+    trivial_mpk = Path(str(path) + ".mpk")
+    if trivial_mpk.exists():
+        return trivial_mpk
+    # Only go up one more step to find it
+    possible_mpk = [f for f in path.parents[0].glob("*.mpk") if f.exists()]
+    if possible_mpk:
+        return possible_mpk[0]
+    else:
+        raise FileNotFoundError(f"No file with root {path} found")
+
+
 def mpk_info(path: Path) -> Iterable[str]:
-    # Will return spaceid, root, space_name, space_type, size, parentid, blodid, and name
+    # Will return space_name, space_type, size, parentid, blodid, and name
     if ".mpk" != path.suffix:
         raise TypeError(
             f"Cannot get information from non-mpk file: {path.name} in {path.parent}"
@@ -208,14 +221,31 @@ def mpk_info(path: Path) -> Iterable[str]:
     return ()
 
 
-def main():
-    # 1. Find the nodes
-    # 2. For each node, find the mpk files under it
+def gen_node_info(path: Path) -> Iterable[Path]:
+    node_dir = path.parent
+    space_id = Path(node_dir.parts[-2] + node_dir.parts[-1])
+    root_id = Path(path, fourslashes(str(space_id)))
+    return node_dir, space_id, root_id
+
+
+def main(top: str = top, sprefix: str = sprefix) -> None:
+    # TODO: make "global" variables into arguments
+    # x1. Find the nodes
+    # x2. For each node, find the mpk files under it
     # 3. Extract pertinent info (mpk_info)
     # 4. Create file+parent dict
     # 5. Copy files to outtop (optional)
     # 6. Fix any symlinks that have been resolved (optional, stretch goal)
-    pass
+    nodes = find_nodes(path=Path(top, sprefix))
+    for node in nodes:
+        root_id: Path
+        node_dir, space_id, root_id = gen_node_info(node)
+        try:
+            root_mpk = find_root_mpk(root_id)
+        except FileNotFoundError:
+            print(f"No mpk for {root_id}")
+            continue
+    return
 
 
 # Print the location of the copied files
