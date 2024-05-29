@@ -5,7 +5,7 @@ import os
 import datetime
 import shutil
 from pathlib import Path
-from typing import Iterable, Union
+from typing import Iterable, Union, Tuple
 
 import msgpack  # type: ignore
 import sys
@@ -244,6 +244,39 @@ def gen_node_info(path: Path) -> Iterable[Path]:
     return node_dir, space_id, root_id
 
 
+def gen_mpk_info(path: Path) -> Iterable[str]:
+    mpk = _load_mpk_decoded(path)
+    parent_id = mpk.get(b"user.ocis.parentid")
+    blob_id = mpk.get(b"user.ocis.blobid", "N/A")
+    name = mpk.get(b"user.ocis.name", "N/A")
+    # TODO: AttributeError: 'str' object has no attribute 'decode'. (on item 16)
+    return parent_id, blob_id, name.decode("utf-8")
+
+
+def find_files_and_parents(
+    node_mpks: Iterable[Path], space_id: str, parent_node: Path
+) -> dict[str, Tuple[str, str]]:
+    files_and_parents: dict[str, Tuple[str, str]] = {}
+    i = 0
+    for individual_mpk in node_mpks:
+        print("file: {0}".format(i))
+        parent_id, blob_id, name = gen_mpk_info(individual_mpk)
+        # Make sure blobid is available
+        if blob_id == "N/A":
+            continue
+        if parent_id == space_id:
+            # If the parent is the space, easy
+            files_and_parents[name] = (".", blob_id)
+        elif parent_id is not None and parent_id != space_id:
+            # Create the path to the parent
+            parent_path = Path(parent_node, fourslashes(parent_id))
+            parent_mpk = find_mpk(parent_path)
+            _, _, parent_name = gen_mpk_info(parent_mpk)
+            files_and_parents[name] = ("./{0}".format(parent_name), blob_id)
+        i += 1
+    return files_and_parents
+
+
 def main(sprefix: str = SPREFIX, args: argparse.Namespace = ARGS) -> None:
     # TODO: make "global" variables into arguments
     # x1. Find the nodes
@@ -287,6 +320,10 @@ def main(sprefix: str = SPREFIX, args: argparse.Namespace = ARGS) -> None:
         if args.info:
             continue
         print("\tsymlink_tree =")
+
+        # Go through the node and match all files
+        node_mpks = find_all_mpks(node_dir)
+        files_and_parents = find_files_and_parents(node_mpks, str(space_id), node)
     return
 
 
