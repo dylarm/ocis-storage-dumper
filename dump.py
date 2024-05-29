@@ -56,23 +56,13 @@ parser.add_argument(
 )
 # TODO: add ability to verify/fix symlinks in topdir (personal need, from a bad copy operation)
 # Parse the command-line arguments
-args = parser.parse_args()
-
-# Store the provided top directory in the variable 'top'
-top = args.topdir
+ARGS = parser.parse_args()
 
 # Define the top directory for the output
-outtop = "/tmp/ocis-dump-" + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+OUTTOP = "/tmp/ocis-dump-" + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
 # Define the storage prefix
-sprefix = "storage/users/spaces"
-
-storage_dir = os.path.join(top, "storage")
-if not os.path.isdir(storage_dir):
-    print(f"'storage' folder not found in {top}")
-    sys.exit(1)
-
-print("top is: ", top)
+SPREFIX = "storage/users/spaces"
 
 
 # def load_mpk_decoded(file):
@@ -203,7 +193,7 @@ user_exists = False
 #
 
 
-def find_nodes(path: Path = Path(top, sprefix)) -> Iterable[Path]:
+def find_nodes(path: Path) -> Iterable[Path]:
     # Only two directories down
     # This is dirpath + "nodes" in the original code
     return path.glob("*/*/nodes")
@@ -254,7 +244,7 @@ def gen_node_info(path: Path) -> Iterable[Path]:
     return node_dir, space_id, root_id
 
 
-def main(top: str = top, sprefix: str = sprefix, args=args) -> None:
+def main(sprefix: str = SPREFIX, args: argparse.Namespace = ARGS) -> None:
     # TODO: make "global" variables into arguments
     # x1. Find the nodes
     # x2. For each node, find the mpk files under it
@@ -262,7 +252,15 @@ def main(top: str = top, sprefix: str = sprefix, args=args) -> None:
     # 4. Create file+parent dict
     # 5. Copy files to outtop (optional)
     # 6. Fix any symlinks that have been resolved (optional, stretch goal)
+    #
+    # Check if the directory supplied is good
+    top = args.topdir
+    if not Path(top, "storage").is_dir():
+        raise NotADirectoryError(f"'storage' folder not found in {top}")
+    print(f"top is: {top}")
     user_exists = False
+
+    # Get all nodes
     nodes = find_nodes(path=Path(top, sprefix))
     for node in nodes:
         root_id: Path
