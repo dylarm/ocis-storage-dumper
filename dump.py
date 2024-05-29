@@ -5,7 +5,7 @@ import os
 import datetime
 import shutil
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Optional
 
 import msgpack  # type: ignore
 import sys
@@ -190,7 +190,7 @@ for dirpath, dirnames, filenames in os.walk(os.path.join(top, sprefix)):
 
 def find_nodes(path: Path = Path(top, sprefix)) -> Iterable[Path]:
     # Only two directories down
-    # This is dirpath in the original code
+    # This is dirpath + "nodes" in the original code
     return path.glob("*/*/nodes")
 
 
