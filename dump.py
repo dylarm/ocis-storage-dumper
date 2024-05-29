@@ -80,6 +80,15 @@ def load_mpk_decoded(file):
         return None
 
 
+def _load_mpk_decoded(file: Path):
+    try:
+        with open(file, "rb") as f:
+            mpk_content = msgpack.unpack(f, raw=True)
+        return mpk_content
+    except ValueError:
+        raise ValueError(f"Unpack failed for file: {file}")
+
+
 user_exists = False
 
 # TODO: replace for-loop and "if 'nodes'" with Path.glob()
@@ -212,13 +221,24 @@ def find_root_mpk(path: Path) -> Path:
         raise FileNotFoundError(f"No file with root {path} found")
 
 
-def mpk_info(path: Path) -> Iterable[str]:
+def mpk_info(mpk_file) -> Iterable[str, int]:
     # Will return space_name, space_type, size, parentid, blodid, and name
-    if ".mpk" != path.suffix:
-        raise TypeError(
-            f"Cannot get information from non-mpk file: {path.name} in {path.parent}"
-        )
-    return ()
+    s_name: str = mpk_file.get(b"user.ocis.space.name", b"N/A").decode("utf-8")
+    s_type: str = mpk_file.get(b"user.ocis.space.type", b"N/A").decode("utf-8")
+    s_size_bytes = mpk_file.get(b"user.ocis.treesize", b"N/A")
+    if s_size_bytes > 1024 and s_size_bytes < 1024 * 1024:
+        s_size = s_size_bytes // 1024
+        size_type = "KiB"
+    elif s_size_bytes > 1024 * 1024 and s_size_bytes < 1024 * 1024 * 1024:
+        s_size = s_size_bytes // (1024 * 1024)
+        size_type = "MiB"
+    elif s_size_bytes > 1024 * 1024 * 1024:
+        s_size = s_size_bytes // (1024 * 1024 * 1024)
+        size_type = "GiB"
+    else:
+        s_size = s_size_bytes
+        size_type = "bytes"
+    return name, s_type, s_size, size_type
 
 
 def gen_node_info(path: Path) -> Iterable[Path]:
@@ -228,7 +248,7 @@ def gen_node_info(path: Path) -> Iterable[Path]:
     return node_dir, space_id, root_id
 
 
-def main(top: str = top, sprefix: str = sprefix) -> None:
+def main(top: str = top, sprefix: str = sprefix, args=args) -> None:
     # TODO: make "global" variables into arguments
     # x1. Find the nodes
     # x2. For each node, find the mpk files under it
@@ -236,15 +256,31 @@ def main(top: str = top, sprefix: str = sprefix) -> None:
     # 4. Create file+parent dict
     # 5. Copy files to outtop (optional)
     # 6. Fix any symlinks that have been resolved (optional, stretch goal)
+    user_exists = False
     nodes = find_nodes(path=Path(top, sprefix))
     for node in nodes:
         root_id: Path
         node_dir, space_id, root_id = gen_node_info(node)
         try:
             root_mpk = find_root_mpk(root_id)
+            root_mpk_contents = _load_mpk_decoded(root_mpk)
         except FileNotFoundError:
             print(f"No mpk for {root_id}")
             continue
+        except ValueError:
+            print(f"Unpack failed for mpk for {root_id}")
+            continue
+        space_name, space_type, tree_size, size_type = mpk_info(root_mpk_contents)
+        # See if we're actually looking for this user
+        if args.user and args.user.lower() not in space_name.lower():
+            print(f"Not parsing for {args.user}")
+            continue
+        user_exists = True
+        # Show info so far
+        print(f"\nSpace type & name: [{space_type}/{space_name}]")
+        print(f"\troot = {root_id}")
+        print(f"\ttree size = {tree_size} {size_type}")
+        print("\tsymlink_tree =")
     return
 
 
