@@ -38,7 +38,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     "topdir",
     nargs="?",
-    default=os.getenv("HOME") + "/.ocis",
+    default="{0}/.ocis".format(os.getenv("HOME")),
     help="The directory of ocis storage",
 )
 
