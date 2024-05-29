@@ -49,6 +49,11 @@ parser.add_argument(
 
 # Add the user argument
 parser.add_argument("-u", "--user", help="Filter by username")
+
+# Add the "only show size" argument
+parser.add_argument(
+    "-i", "--info", action="store_true", help="Only show basic info, without the tree"
+)
 # TODO: add ability to verify/fix symlinks in topdir (personal need, from a bad copy operation)
 # Parse the command-line arguments
 args = parser.parse_args()
@@ -222,7 +227,7 @@ def find_root_mpk(path: Path) -> Path:
         raise FileNotFoundError(f"No file with root {path} found")
 
 
-def mpk_info(mpk_file) -> Iterable[Union[str, int]]:
+def mpk_info(mpk_file) -> Iterable[str]:
     # Will return space_name, space_type, size, parentid, blodid, and name
     s_name: str = mpk_file.get(b"user.ocis.space.name", b"N/A").decode("utf-8")
     s_type: str = mpk_file.get(b"user.ocis.space.type", b"N/A").decode("utf-8")
@@ -239,7 +244,7 @@ def mpk_info(mpk_file) -> Iterable[Union[str, int]]:
     else:
         s_size = s_size_bytes
         size_type = "bytes"
-    return s_name, s_type, s_size, size_type
+    return s_name, s_type, str(s_size), size_type
 
 
 def gen_node_info(path: Path) -> Iterable[Path]:
@@ -253,7 +258,7 @@ def main(top: str = top, sprefix: str = sprefix, args=args) -> None:
     # TODO: make "global" variables into arguments
     # x1. Find the nodes
     # x2. For each node, find the mpk files under it
-    # 3. Extract pertinent info (mpk_info)
+    # x3. Extract pertinent info (mpk_info)
     # 4. Create file+parent dict
     # 5. Copy files to outtop (optional)
     # 6. Fix any symlinks that have been resolved (optional, stretch goal)
@@ -274,13 +279,15 @@ def main(top: str = top, sprefix: str = sprefix, args=args) -> None:
         space_name, space_type, tree_size, size_type = mpk_info(root_mpk_contents)
         # See if we're actually looking for this user
         if args.user and args.user.lower() not in space_name.lower():
-            print(f"Not parsing for {args.user}")
+            print(f"Not parsing for {space_name}")
             continue
         user_exists = True
         # Show info so far
-        print(f"\nSpace type & name: [{space_type}/{space_name}]")
+        print(f"Space type & name: [{space_type}/{space_name}]")
         print(f"\troot = {root_id}")
         print(f"\ttree size = {tree_size} {size_type}")
+        if args.info:
+            continue
         print("\tsymlink_tree =")
     return
 
