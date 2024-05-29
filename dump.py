@@ -7,7 +7,7 @@ import shutil
 from pathlib import Path
 from typing import Iterable
 
-import msgpack
+import msgpack  # type: ignore
 import sys
 import argparse
 
@@ -201,7 +201,9 @@ def find_mpks(path: Path) -> Iterable[Path]:
 
 def mpk_info(path: Path) -> Iterable[str]:
     # Will return spaceid, root, space_name, space_type, size, parentid, blodid, and name
-    pass
+    if ".mpk" != path.suffix:
+        return ()
+    return ()
 
 
 def main():
