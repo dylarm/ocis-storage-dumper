@@ -3,6 +3,7 @@
 # Importing the necessary modules
 import os
 import datetime
+import pickle
 import shutil
 from pathlib import Path
 from typing import Iterable, Union, Tuple, Any, Generator, List
@@ -42,6 +43,14 @@ parser.add_argument(
     nargs="?",
     default="{0}/.ocis".format(os.getenv("HOME")),
     help="The directory of ocis storage",
+)
+
+# Add ability to save and restore progress
+parser.add_argument(
+    "-p",
+    "--prefix",
+    default="state-",
+    help="Prefix to store current state (in case of resuming)",
 )
 
 # Add the new list argument
@@ -262,6 +271,25 @@ def gen_mpk_info(path: Path) -> Iterable[str]:
     return parent_id, blob_id, name.decode("utf-8")
 
 
+def check_for_saved_file(file: Path) -> Any:
+    if file.exists() and file.is_file():
+        with open(file, "rb") as f:
+            try:
+                data = pickle.load(f)
+            except EOFError:
+                raise FileNotFoundError(f"File {file} is empty")
+        return data
+    else:
+        raise FileNotFoundError(f"File {file} does not exist")
+
+
+def save_state(file: Path, obj: Any):
+    if isinstance(obj, Generator):
+        obj = list(obj)
+    with open(file, "wb") as f:
+        pickle.dump(obj, f)
+
+
 def find_files_and_parents(
     node_mpks: Iterable[Path], space_id: str, parent_node: Path
 ) -> dict[str, Tuple[str, str]]:
@@ -337,8 +365,15 @@ def main(sprefix: str = SPREFIX, args: argparse.Namespace = ARGS) -> None:
         print("\tsymlink_tree =")
 
         # Go through the node and match all files
-        node_mpks = find_all_mpks(node_dir)
-        files_and_parents = find_files_and_parents(node_mpks, str(space_id), node)
+        node_prefix = Path(args.prefix + f"node_{space_user}")
+        try:
+            node_mpks = check_for_saved_file(file=node_prefix)
+        except FileNotFoundError:
+            node_mpks = find_all_mpks(node_dir)
+            save_state(file=node_prefix, obj=node_mpks)
+        files_and_parents = find_files_and_parents(
+            node_mpks=node_mpks, space_id=str(space_id), parent_node=node
+        )
     return
 
 
