@@ -50,7 +50,8 @@ parser.add_argument(
 )
 
 # Add the user argument
-parser.add_argument("-u", "--user", help="Filter by username")
+parser.add_argument("-u", "--user", help="Filter by user's name")
+parser.add_argument("-un", "--username", help="Filter by actual username")
 
 # Add the "only show size" argument
 parser.add_argument(
@@ -222,8 +223,10 @@ def find_mpk(path: Path) -> Path:
 def mpk_info(mpk_file) -> Iterable[str]:
     # Will return space_name, space_type, size, parentid, blodid, and name
     s_name: str = mpk_file.get(b"user.ocis.space.name", b"N/A").decode("utf-8")
+    s_alias: str = mpk_file.get(b"user.ocis.space.alias", b"N/A").decode("utf-8")
     s_type: str = mpk_file.get(b"user.ocis.space.type", b"N/A").decode("utf-8")
     s_size_bytes = int(mpk_file.get(b"user.ocis.treesize", b"N/A"))
+    s_user = s_alias.split("/")[1]
     if s_size_bytes > 1024 and s_size_bytes < 1024 * 1024:
         s_size = s_size_bytes / 1024
         size_type = "KiB"
@@ -236,7 +239,7 @@ def mpk_info(mpk_file) -> Iterable[str]:
     else:
         s_size = s_size_bytes
         size_type = "bytes"
-    return s_name, s_type, str(round(s_size, 2)), size_type
+    return s_name, s_type, str(round(s_size, 2)), size_type, s_user
 
 
 def gen_node_info(path: Path) -> Iterable[Path]:
@@ -308,14 +311,20 @@ def main(sprefix: str = SPREFIX, args: argparse.Namespace = ARGS) -> None:
         except ValueError:
             print(f"Unpack failed for mpk for {root_id}")
             continue
-        space_name, space_type, tree_size, size_type = mpk_info(root_mpk_contents)
+        space_name, space_type, tree_size, size_type, space_user = mpk_info(
+            root_mpk_contents
+        )
         # See if we're actually looking for this user
         if args.user and args.user.lower() not in space_name.lower():
             print(f"Not parsing for {space_name}")
             continue
+        if args.username and args.username.lower() not in space_user.lower():
+            print(f"Not parsing for {space_user}")
+            continue
         user_exists = True
         # Show info so far
         print(f"Space type & name: [{space_type}/{space_name}]")
+        print(f"\tusername: {space_user}")
         print(f"\troot = {root_id}")
         print(f"\ttree size = {tree_size} {size_type}")
         if args.info:

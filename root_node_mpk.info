@@ -1,0 +1,11 @@
+{b'user.ocis.propagation': b'1',
+b'user.ocis.owner.id': b'UUID',
+b'user.ocis.space.type': b'personal',
+b'user.ocis.name': b'Firstname Lastname',
+b'user.ocis.treesize': b'11078159600',
+b'user.ocis.space.alias': b'spacetype/username',
+b'user.ocis.tmtime': b'2024-05-08T17:35:06.250801079Z',
+b'user.ocis.space.name': b'Firstname Lastname',
+b'user.ocis.owner.idp': b'https://owncloud.XXXXXX.YYY',
+b'user.ocis.owner.type': b'primary',
+b'user.ocis.tmp.etag': b''}
