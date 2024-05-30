@@ -232,10 +232,10 @@ def mpk_info(mpk_file) -> Iterable[str]:
     s_type: str = mpk_file.get(b"user.ocis.space.type", b"N/A").decode("utf-8")
     s_size_bytes = int(mpk_file.get(b"user.ocis.treesize", b"N/A"))
     s_user = s_alias.split("/")[1]
-    if s_size_bytes > 1024 and s_size_bytes < 1024 * 1024:
+    if 1024 < s_size_bytes < 1024 * 1024:
         s_size = s_size_bytes / 1024
         size_type = "KiB"
-    elif s_size_bytes > 1024 * 1024 and s_size_bytes < 1024 * 1024 * 1024:
+    elif 1024 * 1024 < s_size_bytes < 1024 * 1024 * 1024:
         s_size = s_size_bytes / (1024 * 1024)
         size_type = "MiB"
     elif s_size_bytes > 1024 * 1024 * 1024:
