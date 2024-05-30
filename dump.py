@@ -5,7 +5,7 @@ import os
 import datetime
 import shutil
 from pathlib import Path
-from typing import Iterable, Union, Tuple
+from typing import Iterable, Union, Tuple, Any, Generator, List
 
 import msgpack  # type: ignore
 import sys
@@ -204,7 +204,12 @@ def find_nodes(path: Path) -> Iterable[Path]:
 
 def find_all_mpks(path: Path) -> Iterable[Path]:
     # Find all mpk files under the given path
-    return path.glob("**/*.mpk")
+    mpks: List[Path] = []
+    for root, dirs, files in tqdm(os.walk(path), leave=False):
+        for file in files:
+            if file.endswith(".mpk"):
+                mpks.append(Path(root, file))
+    return mpks
 
 
 def find_mpk(path: Path) -> Path:
