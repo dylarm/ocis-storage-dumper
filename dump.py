@@ -247,9 +247,8 @@ def gen_node_info(path: Path) -> Iterable[Path]:
 def gen_mpk_info(path: Path) -> Iterable[str]:
     mpk = _load_mpk_decoded(path)
     parent_id = mpk.get(b"user.ocis.parentid")
-    blob_id = mpk.get(b"user.ocis.blobid", "N/A")
-    name = mpk.get(b"user.ocis.name", "N/A")
-    # TODO: AttributeError: 'str' object has no attribute 'decode'. (on item 16)
+    blob_id = mpk.get(b"user.ocis.blobid", b"N/A")
+    name = mpk.get(b"user.ocis.name", b"N/A")
     return parent_id, blob_id, name.decode("utf-8")
 
 
@@ -257,9 +256,9 @@ def find_files_and_parents(
     node_mpks: Iterable[Path], space_id: str, parent_node: Path
 ) -> dict[str, Tuple[str, str]]:
     files_and_parents: dict[str, Tuple[str, str]] = {}
-    i = 0
+    # i = 0
     for individual_mpk in node_mpks:
-        print("file: {0}".format(i))
+        # print(f"file {i} at {datetime.datetime.now()}")
         parent_id, blob_id, name = gen_mpk_info(individual_mpk)
         # Make sure blobid is available
         if blob_id == "N/A":
@@ -273,7 +272,7 @@ def find_files_and_parents(
             parent_mpk = find_mpk(parent_path)
             _, _, parent_name = gen_mpk_info(parent_mpk)
             files_and_parents[name] = ("./{0}".format(parent_name), blob_id)
-        i += 1
+        #  += 1
     return files_and_parents
 
 
@@ -282,7 +281,7 @@ def main(sprefix: str = SPREFIX, args: argparse.Namespace = ARGS) -> None:
     # x1. Find the nodes
     # x2. For each node, find the mpk files under it
     # x3. Extract pertinent info (mpk_info)
-    # 4. Create file+parent dict
+    # x4. Create file+parent dict
     # 5. Copy files to outtop (optional)
     # 6. Fix any symlinks that have been resolved (optional, stretch goal)
     #
