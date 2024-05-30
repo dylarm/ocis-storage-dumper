@@ -12,7 +12,10 @@ This script is used to extract files from an OCIS instance, such as a user's per
 python3 dump.py [topdir] [-l/--list] [-u/--user=USERNAME]
 topdir: The directory of ocis storage. Default is $HOME/.ocis.
 -l/--list: List files without copying.
--u/--user USERNAME: Filter by username.
+-u/--user "USER NAME": Filter by username.
+-un/--username USERNAME: The actual username of the user
+-p/--prefix PREFIX: Set the prefix used to store the search results.
+-i/--info: Only show basic info, without transversing the tree.
 ```
 Examples
 
