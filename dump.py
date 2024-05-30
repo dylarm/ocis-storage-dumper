@@ -11,6 +11,8 @@ import msgpack  # type: ignore
 import sys
 import argparse
 
+from tqdm import tqdm
+
 
 # A function to split a string into parts and join with slashes
 def fourslashes(s: str) -> str:
@@ -257,7 +259,7 @@ def find_files_and_parents(
 ) -> dict[str, Tuple[str, str]]:
     files_and_parents: dict[str, Tuple[str, str]] = {}
     # i = 0
-    for individual_mpk in node_mpks:
+    for individual_mpk in tqdm(node_mpks):
         # print(f"file {i} at {datetime.datetime.now()}")
         parent_id, blob_id, name = gen_mpk_info(individual_mpk)
         # Make sure blobid is available
