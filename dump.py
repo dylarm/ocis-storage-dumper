@@ -394,8 +394,8 @@ def main(sprefix: str = SPREFIX, args: argparse.Namespace = ARGS) -> None:
                 node_mpks=node_mpks, space_id=str(space_id), parent_node=node
             )
             save_state(file=files_prefix, obj=files_and_parents)
-        blob_exist = 0
-        blob_noexist = 0
+        blob_file = 0
+        blob_folder = 0
         for i, (name, (parent_path, blob_id)) in tqdm(
             enumerate(files_and_parents.items(), start=1),
             leave=False,
@@ -405,14 +405,15 @@ def main(sprefix: str = SPREFIX, args: argparse.Namespace = ARGS) -> None:
             blob_path = Path(node_dir, "blobs", fourslashes(blob_id))
 
             if blob_path.exists():
-                blob_exist += 1
+                blob_file += 1
                 if space_type == "personal" and "_" in space_name:
                     space_name = space_name.split("_")[1]
                 print(f"\t{i}\t{parent_path}/{name}")
+                print(f"\tfull path: {Path(space_type, space_user, parent_path, name)}")
             else:
-                blob_noexist += 1
-                print(f"\t{i}\t{parent_path}/{name}\t(directory?)")
-        print(f"Exist: {blob_exist}\nNot: {blob_noexist}")
+                blob_folder += 1
+                print(f"\t{i}\t{parent_path}/{name}\t(directory)")
+        print(f"Files: {blob_file}\nFolders: {blob_folder}")
     return
 
 
