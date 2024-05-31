@@ -316,6 +316,21 @@ def find_files_and_parents(
     return files_and_parents
 
 
+def find_parents(
+    individual_mpk: Path, space_id: str, parent_node: Path
+) -> dict[str, Tuple[str, str]]:
+    files_and_parents: dict[str, Tuple[str, str]] = {}
+    # Base
+    parent_id, blob_id, name = gen_mpk_info(individual_mpk)
+    if parent_id == space_id:
+        files_and_parents[name] = (".", blob_id)
+    elif parent_id is not None and parent_id != space_id:
+        parent_path = Path(parent_node, fourslashes(parent_id))
+        parent_mpk = find_mpk(parent_path)
+        files_and_parents = find_parents(parent_mpk, space_id, parent_node)
+    return files_and_parents
+
+
 def main(sprefix: str = SPREFIX, args: argparse.Namespace = ARGS) -> None:
     # TODO: make "global" variables into arguments
     # x1. Find the nodes
