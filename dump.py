@@ -270,7 +270,9 @@ def gen_mpk_info(path: Path) -> Iterable[str]:
     parent_id = mpk.get(b"user.ocis.parentid")
     blob_id = mpk.get(b"user.ocis.blobid", b"N/A")
     name = mpk.get(b"user.ocis.name", b"N/A")
-    return parent_id, blob_id, name.decode("utf-8")
+    if parent_id is not None:
+        parent_id = parent_id.decode("utf-8")
+    return parent_id, blob_id.decode("utf-8"), name.decode("utf-8")
 
 
 def check_for_saved_file(file: Path) -> Any:
@@ -297,27 +299,21 @@ def find_files_and_parents(
 ) -> dict[str, Tuple[str, str]]:
     files_and_parents: dict[str, Tuple[str, str]] = {}
     # i = 0
-    for individual_mpk in tqdm(node_mpks, leave=False, desc="Finding all files"):
-        # print(f"file {i} at {datetime.datetime.now()}")
-        parent_id, blob_id, name = gen_mpk_info(individual_mpk)
+    for individual_mpk in tqdm(
+        node_mpks, leave=False, desc="Finding all files", disable=False
+    ):
+        _, blob_id, _ = gen_mpk_info(individual_mpk)
         # Make sure blobid is available
-        if blob_id == "N/A":
+        if blob_id == b"N/A":
             continue
-        if parent_id == space_id:
-            # If the parent is the space, easy
-            files_and_parents[name] = (".", blob_id)
-        elif parent_id is not None and parent_id != space_id:
-            # Create the path to the parent
-            parent_path = Path(parent_node, fourslashes(parent_id))
-            parent_mpk = find_mpk(parent_path)
-            _, _, parent_name = gen_mpk_info(parent_mpk)
-            files_and_parents[name] = ("./{0}".format(parent_name), blob_id)
-        #  += 1
+        files_and_parents = files_and_parents | find_parents(
+            individual_mpk, space_id, parent_node
+        )
     return files_and_parents
 
 
 def find_parents(
-    individual_mpk: Path, space_id: str, parent_node: Path
+    individual_mpk: Path, space_id: str, parent_node: Path, level: int = 0
 ) -> dict[str, Tuple[str, str]]:
     files_and_parents: dict[str, Tuple[str, str]] = {}
     # Base
@@ -327,7 +323,9 @@ def find_parents(
     elif parent_id is not None and parent_id != space_id:
         parent_path = Path(parent_node, fourslashes(parent_id))
         parent_mpk = find_mpk(parent_path)
-        files_and_parents = find_parents(parent_mpk, space_id, parent_node)
+        parents = find_parents(parent_mpk, space_id, parent_node, level + 1)
+        parent_name = [k for k in parents][0]
+        files_and_parents[name] = (f"{parents[parent_name][0]}/{parent_name}", blob_id)
     return files_and_parents
 
 
@@ -413,7 +411,7 @@ def main(sprefix: str = SPREFIX, args: argparse.Namespace = ARGS) -> None:
                 print(f"\t{i}\t{parent_path}/{name}")
             else:
                 blob_noexist += 1
-                print(f"\t{i}\t{parent_path}/{name}\t(DNE)")
+                print(f"\t{i}\t{parent_path}/{name}\t(directory?)")
         print(f"Exist: {blob_exist}\nNot: {blob_noexist}")
     return
 
