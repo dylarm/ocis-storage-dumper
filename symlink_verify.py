@@ -1,5 +1,6 @@
 import argparse
 import os
+import shutil
 import time
 from pprint import pprint
 from typing import Iterable, List, Optional
@@ -16,6 +17,9 @@ DATA_SUBDIR = "storage/users/spaces/"
 parser = argparse.ArgumentParser(description="Verify (and fix) incorrect symlinks")
 parser.add_argument("path", nargs="?", help="Path to OCIS data")
 # parser.add_argument("-l", "--log", help="File to store paths of mpk files")
+parser.add_argument(
+    "-f", "--fix", action="store_true", help="Repair any missing/incorrect symlinks"
+)
 group = parser.add_mutually_exclusive_group()
 group.add_argument(
     "-m",
@@ -100,7 +104,12 @@ def mpkdir_to_symlink(mpk_content: dict[str, str], mpk_as_dir: Path) -> Path:
 
 
 def main(args=ARGS):
-    symlinks_exist, symlinks_actual, symlinks_theoretical = 0, 0, 0
+    symlinks_exist, symlinks_actual, symlinks_theoretical, symlinks_actual_fixed = (
+        0,
+        0,
+        0,
+        0,
+    )
     if args.metadata:
         path = Path(args.path, METADATA_SUBDIR)
     elif args.data:
@@ -117,21 +126,77 @@ def main(args=ARGS):
             mpk_raw = load_mpk(mpk)
             mpk_content = get_mpk_info(mpk_raw)
             if "N/A" in [mpk_content[x] for x in mpk_content]:
-                pprint(mpk_content)
+                # pprint(mpk_content)
                 continue
             symlinks_theoretical += 1
             directory = mpkfile_to_dir(mpk)
             symlink_path = mpkdir_to_symlink(
                 mpk_content=mpk_content, mpk_as_dir=directory
             )
+            # This might be a dangerous operation, but currently os.path.relpath returns with an extra "../" compared
+            # to the actual Path.readlink()
+            symlink_rel_target = Path(os.path.relpath(directory, symlink_path)[3:])
+            symlink_actual_path = None
             if symlink_path.exists():
                 symlinks_exist += 1
             if symlink_path.is_symlink():
                 symlinks_actual += 1
-            print(f"{symlink_path}: {symlink_path.is_symlink()}")
+                symlink_actual_path = symlink_path.readlink()
+            # print(f"{symlink_path}: {symlink_path.is_symlink()}")
+            if args.fix:
+                if symlink_actual_path is None:
+                    print(
+                        f"{symlink_path} is currently not a symlink.\n\tShould point to\t {symlink_rel_target}"
+                    )
+                if symlink_path.exists() and not symlink_path.is_symlink():
+                    print(f"\tRemoving current not-symlink {symlink_path.name}")
+                    if mpk_content["type_name"] == "dir":
+                        shutil.rmtree(symlink_path)
+                    elif mpk_content["type_name"] == "file":
+                        symlink_path.unlink()
+                elif not directory.exists():
+                    # Let's hope this doesn't destroy things...
+                    directory.touch()
+                if mpk_content["type_name"] == "dir":
+                    symlink_parent_dir = symlink_path.parents[0].resolve()
+                    symlink_parent_dir.mkdir(mode=0o600, parents=True, exist_ok=True)
+                # print(f"{symlink_path.name} → {symlink_rel_target}")
+                # print(f"{symlink_rel_target} ←→ {symlink_actual_path}")
+                try:
+                    symlink_path.resolve().symlink_to(symlink_rel_target)
+                except FileExistsError:
+                    if symlink_path.is_symlink():
+                        print(f"{symlink_path.name} is already a symlink")
+                    else:
+                        print(f"{symlink_path.name} already exists, skipping")
+                except FileNotFoundError:
+                    print(
+                        f"{symlink_rel_target} appears to not exist, skipping for now..."
+                    )
+                try:
+                    new_symlink_path = symlink_path.readlink()
+                except:
+                    new_symlink_path = None
+                print(
+                    f"\tNew link: \t{new_symlink_path}\n\tShould be: \t{Path(os.path.relpath(directory, symlink_path)[3:])}"
+                )
+                if new_symlink_path == Path(
+                    os.path.relpath(directory, symlink_path)[3:]
+                ):
+                    symlinks_actual_fixed += 1
+                    print("\tSuccess!")
+                else:
+                    print("\tFailure")
+
     print(
-        f"Symlinks: {symlinks_exist} (Actual: {symlinks_actual}) (Theoretical: {symlinks_theoretical})"
+        f"Symlinks 'exist': {symlinks_exist}\n\tActual: {symlinks_actual}\n\tTheoretical: {symlinks_theoretical}\n\tFixed: {symlinks_actual_fixed}"
     )
+    if (
+        symlinks_exist != symlinks_actual
+        or symlinks_exist != symlinks_theoretical
+        or symlinks_actual != symlinks_theoretical
+    ) or symlinks_actual_fixed == symlinks_exist:
+        print("There may be some incorrect symlinks")
 
 
 if __name__ == "__main__":
