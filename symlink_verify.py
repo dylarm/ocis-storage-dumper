@@ -1,6 +1,7 @@
 import argparse
 import os
 import shutil
+import sys
 import time
 from pprint import pprint
 from typing import Iterable, List, Optional
@@ -89,7 +90,16 @@ def find_all_mpks(mpk_path: Path) -> Iterable[Path]:
 
 def mpkdir_to_symlink(mpk_content: dict[str, str], mpk_as_dir: Path) -> Path:
     parent_path = fourslashes(mpk_content["parentid"])
-    if mpk_content["type_name"] == "dir":
+    if mpk_content["type_name"] == "dir" and mpk_as_dir.is_dir():
+        symlink_path = Path(
+            mpk_as_dir, "../../../../../", parent_path, mpk_content["name"]
+        )
+    elif mpk_content["type_name"] == "dir" and mpk_as_dir.is_file():
+        symlink_path = Path(
+            mpk_as_dir.parents[0], "../../../../", parent_path, mpk_content["name"]
+        )
+    elif mpk_content["type_name"] == "dir":
+        # To catch other types of "dir"
         symlink_path = Path(
             mpk_as_dir, "../../../../../", parent_path, mpk_content["name"]
         )
@@ -98,7 +108,7 @@ def mpkdir_to_symlink(mpk_content: dict[str, str], mpk_as_dir: Path) -> Path:
             mpk_as_dir.parents[0], "../../../../", parent_path, mpk_content["name"]
         )
     else:
-        print(f"Weird file: {mpk_as_dir.stat()}")
+        print(f"Weird mpk contents: {mpk_content}")
         raise NotADirectoryError(f"{mpk_as_dir} is neither a file nor a directory.")
     return symlink_path
 
@@ -153,13 +163,23 @@ def main(args=ARGS):
                     if mpk_content["type_name"] == "dir":
                         shutil.rmtree(symlink_path)
                     elif mpk_content["type_name"] == "file":
-                        symlink_path.unlink()
+                        symlink_path.unlink(missing_ok=True)
                 elif not directory.exists():
                     # Let's hope this doesn't destroy things...
+                    print(f"Creating {directory.name}")
                     directory.touch()
+                    # Need to update some paths too
+                    symlink_path = mpkdir_to_symlink(
+                        mpk_content=mpk_content, mpk_as_dir=directory.parents[0]
+                    )
                 if mpk_content["type_name"] == "dir":
                     symlink_parent_dir = symlink_path.parents[0].resolve()
-                    symlink_parent_dir.mkdir(mode=0o600, parents=True, exist_ok=True)
+                    try:
+                        symlink_parent_dir.mkdir(
+                            mode=0o600, parents=True, exist_ok=True
+                        )
+                    except FileExistsError:
+                        print(f"\t{symlink_path.name} already exists")
                 # print(f"{symlink_path.name} → {symlink_rel_target}")
                 # print(f"{symlink_rel_target} ←→ {symlink_actual_path}")
                 try:
@@ -168,11 +188,16 @@ def main(args=ARGS):
                     if symlink_path.is_symlink():
                         print(f"{symlink_path.name} is already a symlink")
                     else:
-                        print(f"{symlink_path.name} already exists, skipping")
+                        print(f"\tSkipping {symlink_path.name} for now...")
                 except FileNotFoundError:
+                    print(f"{mpk_raw}")
                     print(
                         f"{symlink_rel_target} appears to not exist, skipping for now..."
                     )
+                except NotADirectoryError:
+                    print(f"\tNeed to create directory {symlink_path.parents[0]}")
+                    symlink_path.parents[0].unlink(missing_ok=True)
+                    symlink_path.parents[0].mkdir(parents=True, exist_ok=True)
                 try:
                     new_symlink_path = symlink_path.readlink()
                 except:
@@ -195,7 +220,7 @@ def main(args=ARGS):
         symlinks_exist != symlinks_actual
         or symlinks_exist != symlinks_theoretical
         or symlinks_actual != symlinks_theoretical
-    ) or symlinks_actual_fixed == symlinks_exist:
+    ):
         print("There may be some incorrect symlinks")
 
 
