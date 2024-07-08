@@ -429,7 +429,7 @@ def main(sprefix: str = SPREFIX, args: argparse.Namespace = ARGS) -> None:
                     write_path = Path(args.outdir, full_path)
                     write_path.parent.mkdir(mode=0o660, parents=True, exist_ok=True)
                     print(f"\t\tCreated {write_path.parent}")
-                    if blob_path.is_file() and write_path.is_file():
+                    if blob_path.is_file():
                         shutil.copy2(blob_path, write_path)
                         print(f"\t\tSaved {write_path.name}")
             else:
