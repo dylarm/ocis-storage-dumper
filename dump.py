@@ -235,7 +235,10 @@ def find_mpk(path: Path) -> Path:
     if trivial_mpk.exists():
         return trivial_mpk
     # Only go up one more step to find it
-    possible_mpk = [f for f in path.parents[0].glob("*.mpk") if f.exists()]
+    try:
+        possible_mpk = [f for f in path.parents[0].glob("*.mpk") if f.exists()]
+    except IndexError:
+        possible_mpk = None
     if possible_mpk:
         return possible_mpk[0]
     else:
@@ -388,18 +391,22 @@ def main(sprefix: str = SPREFIX, args: argparse.Namespace = ARGS) -> None:
         # Go through the node and match all files
         node_prefix = Path(args.prefix + f"node_{space_user}")
         files_prefix = Path(args.prefix + f"files_{space_user}")
-        try:
-            node_mpks = check_for_saved_file(file=node_prefix)
-        except FileNotFoundError:
-            node_mpks = find_all_mpks(node_dir)
-            save_state(file=node_prefix, obj=node_mpks)
-        try:
-            files_and_parents = check_for_saved_file(file=files_prefix)
-        except FileNotFoundError:
-            files_and_parents = find_files_and_parents(
-                node_mpks=node_mpks, space_id=str(space_id), parent_node=node
-            )
-            save_state(file=files_prefix, obj=files_and_parents)
+        # try:
+        #     node_mpks = check_for_saved_file(file=node_prefix)
+        # except FileNotFoundError:
+        #     node_mpks = find_all_mpks(node_dir)
+        #     save_state(file=node_prefix, obj=node_mpks)
+        # try:
+        #     files_and_parents = check_for_saved_file(file=files_prefix)
+        # except FileNotFoundError:
+        #     files_and_parents = find_files_and_parents(
+        #         node_mpks=node_mpks, space_id=str(space_id), parent_node=node
+        #     )
+        #     save_state(file=files_prefix, obj=files_and_parents)
+        node_mpks = find_all_mpks(node_dir)
+        files_and_parents = find_files_and_parents(
+            node_mpks=node_mpks, space_id=str(space_id), parent_node=node
+        )
         blob_file = 0
         blob_folder = 0
         for i, (name, (parent_path, blob_id)) in tqdm(
