@@ -33,16 +33,22 @@ def decode_if_bytes(s: Union[str, bytes]) -> str:
 
 
 # Create the argument parser
-parser = argparse.ArgumentParser(
-    description="Version 2.0\nTopdir is the directory of ocis storage. Default is $HOME/.ocis"
-)
+parser = argparse.ArgumentParser(description="Version 3.0")
 
 # Add an argument to the parser - topdir
 parser.add_argument(
     "topdir",
     nargs="?",
     default="{0}/.ocis".format(os.getenv("HOME")),
-    help="The directory of ocis storage",
+    help="The directory of ocis storage. Default: $HOME/.ocis",
+)
+
+# Add an output directory - outdir
+parser.add_argument(
+    "outdir",
+    nargs="?",
+    default=".",
+    help="The directory to store extracted file. Default: .",
 )
 
 # Add ability to save and restore progress
