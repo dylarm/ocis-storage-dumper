@@ -428,8 +428,10 @@ def main(sprefix: str = SPREFIX, args: argparse.Namespace = ARGS) -> None:
                     full_path = Path(space_type, space_user, parent_path, name)
                     write_path = Path(args.outdir, full_path)
                     write_path.parent.mkdir(mode=0o660, parents=True, exist_ok=True)
-                    shutil.copy2(blob_path, write_path)
-                    print(f"\tSaved to: {write_path}")
+                    print(f"\t\tCreated {write_path.parent}")
+                    if blob_path.is_file() and write_path.is_file():
+                        shutil.copy2(blob_path, write_path)
+                        print(f"\t\tSaved {write_path.name}")
             else:
                 blob_folder += 1
                 print(f"\t{i}\t{parent_path}/{name}\t(directory)")
